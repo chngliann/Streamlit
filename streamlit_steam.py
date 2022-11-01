@@ -2,7 +2,9 @@ from dataclasses import dataclass
 import streamlit as st #to host on web app
 import pandas as pd #to read/manipulate data
 import numpy as np #to perform calcs
-import plotly.express as px
+import plotly.express as px #to plot diagrams
+from wordcloud import WordCloud, STOPWORDS
+import matplotlib.pyplot as plt #to plot and prevent xticks and yticks
 
 #create web app run on streamlit
 #requires to run "streamlit run app.py" in Terminal
@@ -22,7 +24,7 @@ DATA_URL = (r"C:\Users\chngl\OneDrive\Documents\GitHub\Streamlit\train.csv")
 def load_data():
     df = pd.read_csv(DATA_URL)
     #column manipulation
-    #df[''] = pd.to_datetime(df[''])
+    #df[''] = pd.to_datetime(df['']) #this converts the datetime to pandas datetime format
     return df
 
 #argument to pass to display
@@ -63,10 +65,56 @@ if not st.sidebar.checkbox("Hide", True): #by default, checkbox is checked (True
 ####### plot location data on interactive map #######
 
 st.sidebar.subheader("When and where are users writing from?")
-st.sidebar.slider("Hour of day", 0, 23)
+hour = st.sidebar.slider("Hour of day", 0, 23)
 #another input method
 #st.sidebar.number_input("Hour of day", min_value=1, max_value=24)
 
 #this dataset doesnt have long and lat though
 #need 2 conditions 1) longitude and langitude columns 2) no missing data in those columns
-modified_data = df[]
+#st.map(df) -> will just plot the map of all the points
+
+# modified_data = df[df[''].dt.hour == hour]
+# if not st.sidebar.checkbox("Close", True, key='1'):
+#     st.markdown("Tweets location based on time of day")
+#     st.markdown("%i tweets between %i:00 and %i:00" % len(modified_data), hour, (hour+1)%24)
+#     st.map(modified_data)
+#     if not st.sidebar.checkbox("Show Raw Data", False):
+#         st.write(modified_data)
+
+
+
+
+
+
+
+
+##### plot num of tweets by sentiment for each airline ######
+st.sidebar.subheader("Breakdown Steam games recommendations by recommendation")
+game_list = df.title.unique() # list of games
+choice = st.sidebar.multiselect('Pick game', (game_list), key='0') #tuple of string as input
+
+if len(choice) > 0:
+    choice_data = df[df.title.isin(choice)]
+    fig_choice = px.histogram(choice_data, x='title', y='user_suggestion', histfunc='count', color='user_suggestion',
+    facet_col='user_suggestion', labels={'user_suggestion':'recommendations'}, height=500, width=600)
+    #another way of presenting
+    #fig_choice = px.histogram(choice_data, x="title", y="user_suggestion", color="title", pattern_shape="user_suggestion", histfunc='count')
+    st.plotly_chart(fig_choice)
+
+
+
+##### word cloud for positive/negative recommendations ##############
+st.sidebar.header("Word Cloud")
+word_radio = st.sidebar.radio("Display word cloud based on recommendation sentiment", (1, 0))
+
+if not st.sidebar.checkbox("Close", True, key='3'):
+    st.subheader('Word Cloud for %s sentiment' % word_radio)
+    df_cloud = df[df['user_suggestion'] == word_radio] #get rows where match sentiment
+    words = ' '.join(df_cloud['user_review']) #add spacing between words
+    #word processing
+    processed_words = ' '.join([word for word in words.split() if 'Early' not in word and not word.startswith('-') and word != 'Access'])
+    word_cloud = WordCloud(stopwords=STOPWORDS, background_color='black', height=600, width=800).generate(processed_words)
+    plt.imshow(word_cloud)
+    plt.xticks([])
+    plt.yticks([])
+    st.pyplot() # plot the matlib figures
